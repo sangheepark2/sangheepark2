@@ -223,7 +223,9 @@ def update_plot(return_q):
             var = "var: %.6f" % var
             mean = np.mean(data2)
             mean = "mean: %.4f" % mean
-            text_info = mean + " " + var
+            range = np.max(data2) - np.min(data2)
+            range = "range: %0.4f" % range
+            text_info = mean + " " + range + " " + var
 
             click = int(entry_click.get())
             xlen = data2.shape[0]
