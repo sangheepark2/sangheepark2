@@ -5,7 +5,6 @@
 # from multiprocessing.queues import Queue
 import queue
 import multiprocessing as mp
-import statistics
 
 import numpy as np
 import pylab as pl
@@ -17,9 +16,10 @@ import os
 import threading as th
 import time
 import matplotlib
+from matplotlib.offsetbox import AnchoredText
 
 top = tk.Tk()
-
+duration = 0
 def moving_average(a, n=3, samplerate=44100):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
@@ -50,6 +50,10 @@ def getDriftProc(fileName):
     READ_UNIT = 5
 
     sample_rate = int(entry_samplerate.get())
+    os.path.getsize(fileName)
+    statinfo = os.stat(fileName)
+    filesize = statinfo.st_size
+    duration = filesize / (2 * 2 *sample_rate) # bit depth (2) * channels (2) * samplerate
 
     readunit = sample_rate * READ_UNIT * 60
     readstart = 0
@@ -211,21 +215,30 @@ def update_plot(return_q):
 
         if data is not None:
             pl.title("Drift over Time")
-            pl.xlabel("Time (clicks)")
+            pl.xlabel("Time (Minutes)")
             pl.ylabel("Sync (Second)")
 
-            data2 = data[ data != np.array(None)]
+            data2 = data[data != np.array(None)]
             var = np.var(data2)
-            var = "%.6f" % var
+            var = "var: %.6f" % var
             mean = np.mean(data2)
-            mean = "%.4f" % mean
+            mean = "mean: %.4f" % mean
+            text_info = mean + " " + var
+
+            click = int(entry_click.get())
+            xlen = data2.shape[0]
+            x = np.arange(0, xlen)
+            x = x * click / 60
+            pl.plot(x, data2.tolist(), label="Drift over Time")
+            pl.text(0.1, 0.5, text_info, bbox=dict(boxstyle="square", facecolor="white"))
+            text2 = AnchoredText(text_info, loc=2)
+            ax = pl.gca()
+            ax.add_artist(text2)
 
             label_var_out.configure(text=var)
             label_mean_out.configure(text=mean)
 
-            pl.plot(data, label="Drift Over Time")
             pl.show()
-
         else:
             None
     except queue.Empty:
